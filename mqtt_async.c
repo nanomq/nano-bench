@@ -1,4 +1,5 @@
 #include "nnb_opt.h"
+#include <limits.h>
 #include <nng/nng.h>
 #include <nng/supplemental/util/platform.h>
 #include <stdatomic.h>
@@ -298,7 +299,7 @@ nnb_publish(nnb_pub_opt *opt)
 	char         url[128];
 	nng_socket   sock;
 	nng_dialer   dialer;
-	struct work *works[PARALLEL];
+	struct work *work;
 	int          i;
 	int          rv;
 
@@ -307,9 +308,7 @@ nnb_publish(nnb_pub_opt *opt)
 		fatal("nng_socket", rv);
 	}
 
-	for (i = 0; i < PARALLEL; i++) {
-		works[i] = alloc_work(sock, pub_cb);
-	}
+	work = alloc_work(sock, pub_cb);
 
 	if ((rv = nng_dialer_create(&dialer, sock, url)) != 0) {
 		fatal("nng_dialer_create", rv);
@@ -340,9 +339,7 @@ nnb_publish(nnb_pub_opt *opt)
 	nng_dialer_set_cb(dialer, connect_cb, (void *) opt);
 	nng_dialer_start(dialer, NNG_FLAG_NONBLOCK);
 
-	for (i = 0; i < PARALLEL; i++) {
-		pub_cb(works[i]);
-	}
+	pub_cb(work);
 }
 
 int
@@ -356,9 +353,13 @@ main(int argc, char **argv)
 
 	if (!strcmp(argv[1], "pub")) {
 		nnb_pub_opt *opt = nnb_pub_opt_init(argc - 1, ++argv);
-		send_cnt         = 1000 / opt->interval_of_msg * opt->count;
-		send_cnt_bak     = send_cnt;
-		printf("send_cnt = %d\n", send_cnt);
+		if (0 == opt->limit) {
+			send_cnt = INT_MAX;
+			printf("send_cnt = ulimited\n");
+		} else {
+			send_cnt = opt->limit;
+			printf("send_cnt = %d\n", send_cnt);
+		}
 		for (int i = 0; i < opt->count; i++) {
 			nnb_publish(opt);
 			nng_msleep(opt->interval);
