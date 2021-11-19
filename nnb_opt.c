@@ -258,7 +258,7 @@ int pub_opt_set(int argc, char **argv, nnb_pub_opt *opt) {
   int digit_optind = 0;
   int option_index = 0;
 
-  while ((c = getopt_long(argc, argv, "l:r:s:t:I:h:p:V:c:n:i:u:P:k:C:S:0",
+  while ((c = getopt_long(argc, argv, "L:r:s:t:I:h:p:V:c:n:i:u:P:k:C:S:0",
                           long_options, &option_index)) != -1) {
     int this_option_optind = optind ? optind : 1;
     switch (c) {
@@ -273,7 +273,7 @@ int pub_opt_set(int argc, char **argv, nnb_pub_opt *opt) {
       }
 
       break;
-    case 'l':
+    case 'L':
       opt->limit = atoi(optarg);
       break;
     case 't':

@@ -4,10 +4,11 @@
 #include <stdatomic.h>
 
 #ifndef PARALLEL
-#define PARALLEL 8
+#define PARALLEL 1
 #endif
 
 static atomic_int acnt          = 0;
+static atomic_int last_acnt     = 0;
 static atomic_int recv_cnt      = 0;
 static atomic_int last_recv_cnt = 0;
 static atomic_int send_cnt      = 0;
@@ -99,6 +100,7 @@ pub_cb(void *arg)
 	case INIT:
 
 		if (--send_cnt < 0) {
+			send_cnt = 0;
 			break;
 		}
 		nng_mqtt_msg_alloc(&work->msg, 0);
@@ -134,6 +136,7 @@ pub_cb(void *arg)
 		}
 
 		if (--send_cnt < 0) {
+			send_cnt = 0;
 			break;
 		}
 		nng_msg_dup(&msg, work->msg);
@@ -182,6 +185,8 @@ connect_cb(void *arg, nng_msg *msg)
 		printf("connected: %d.\n", ++acnt);
 		break;
 	case CONN:
+
+		// ++acnt;
 		printf("connected: %d.\n", ++acnt);
 		break;
 	}
@@ -356,8 +361,9 @@ main(int argc, char **argv)
 
 	if (!strcmp(argv[1], "pub")) {
 		nnb_pub_opt *opt = nnb_pub_opt_init(argc - 1, ++argv);
-		send_cnt         = 1000 / opt->interval_of_msg * opt->count;
-		send_cnt_bak     = send_cnt;
+		// send_cnt         = 1000 / opt->interval_of_msg * opt->count;
+		send_cnt      = opt->limit;
+		last_send_cnt = send_cnt;
 		printf("send_cnt = %d\n", send_cnt);
 		for (int i = 0; i < opt->count; i++) {
 			nnb_publish(opt);
@@ -396,16 +402,24 @@ main(int argc, char **argv)
 				    c - l);
 			}
 			break;
-		case PUB:;
+		case PUB:
 			c             = send_cnt;
 			l             = last_send_cnt;
 			last_send_cnt = c;
+
+			printf("pub_opt: %d c: %d\n", l, c);
 			if (c != l) {
 				printf("sent: total=%d, rate=%d(msg/sec)\n",
-				    pub_opt->count - c, l - c);
+				    pub_opt->limit - c, l - c);
 			}
 			break;
 		}
+		// case CONN:
+		// 	if (acnt != last_acnt) {
+		// 		last_acnt = acnt;
+		// 		printf("connected: %d.\n", acnt);
+		// 	}
+		// }
 	}
 
 	return 0;
