@@ -4,7 +4,7 @@
 #include <stdatomic.h>
 
 #ifndef PARALLEL
-#define PARALLEL 1
+#define PARALLEL 12
 #endif
 
 static atomic_int acnt          = 0;
@@ -98,7 +98,7 @@ pub_cb(void *arg)
 
 	switch (work->state) {
 	case INIT:
-
+        // printf("init\n");
 		if (--send_cnt < 0) {
 			send_cnt = 0;
 			break;
@@ -115,10 +115,12 @@ pub_cb(void *arg)
 		    work->msg, (uint8_t *) payload, pub_opt->size);
 		nng_mqtt_msg_encode(work->msg);
 
-		nng_msg_dup(&msg, work->msg);
-		nng_aio_set_msg(work->aio, msg);
-		msg         = NULL;
-		work->state = WAIT;
+		// nng_msg_dup(&msg, work->msg);
+        // msg = work->msg;
+        nni_msg_clone(work->msg);
+		nng_aio_set_msg(work->aio, work->msg);
+		// msg         = NULL;
+		work->state = SEND;
 		nng_ctx_send(work->ctx, work->aio);
 		break;
 
@@ -126,9 +128,12 @@ pub_cb(void *arg)
 		work->state = SEND;
 		// nng_sleep_aio(pub_opt->interval_of_msg, work->aio);
 		nng_msleep(pub_opt->interval_of_msg);
-		// break;
+        printf("wait\n");
+	    break;
 
 	case SEND:
+    // printf("send %d\n", work->ctx.id);
+    // nng_msleep(pub_opt->interval_of_msg);
 		// send packets
 		if ((rv = nng_aio_result(work->aio)) != 0) {
 			nng_msg_free(work->msg);
@@ -136,13 +141,16 @@ pub_cb(void *arg)
 		}
 
 		if (--send_cnt < 0) {
+            work->state = WAIT;
 			send_cnt = 0;
 			break;
 		}
-		nng_msg_dup(&msg, work->msg);
-		nng_aio_set_msg(work->aio, msg);
-		msg         = NULL;
-		work->state = WAIT;
+		// nng_msg_dup(&msg, work->msg);
+        nni_msg_clone(work->msg);
+		nng_aio_set_msg(work->aio, work->msg);
+		// msg         = NULL;
+		work->state = SEND;
+        // nng_aio_set_timeout(work->aio, 1);
 		nng_ctx_send(work->ctx, work->aio);
 		break;
 	}
@@ -221,7 +229,7 @@ nnb_connect(nnb_conn_opt *opt)
 	nng_mqtt_msg_alloc(&msg, 0);
 	nng_mqtt_msg_set_packet_type(msg, NNG_MQTT_CONNECT);
 	nng_mqtt_msg_set_connect_keep_alive(msg, opt->keepalive);
-	nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
+	nng_mqtt_msg_set_connect_clean_session(msg, true);
 
 	if (opt->username) {
 		nng_mqtt_msg_set_connect_user_name(msg, opt->username);
@@ -367,7 +375,7 @@ main(int argc, char **argv)
 		printf("send_cnt = %d\n", send_cnt);
 		for (int i = 0; i < opt->count; i++) {
 			nnb_publish(opt);
-			nng_msleep(opt->interval);
+			// nng_msleep(opt->interval);
 		}
 		// nnb_pub_opt_destory(opt);
 	} else if (!strcmp(argv[1], "sub")) {
