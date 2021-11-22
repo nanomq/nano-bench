@@ -1,3 +1,4 @@
+#include "dbg.h"
 #include "nnb_opt.h"
 #include "nnb_help.h"
 #include <stdlib.h>
@@ -110,6 +111,12 @@ nnb_pub_opt_destory(nnb_pub_opt *opt)
 			opt->password = NULL;
 		}
 
+		if (opt->topic) {
+			nng_free(opt->topic, strlen(opt->topic));
+			opt->topic = NULL;
+		}
+
+
 		nng_free(opt, sizeof(nnb_pub_opt));
 		opt = NULL;
 	}
@@ -199,6 +206,33 @@ conn_opt_set(int argc, char **argv, nnb_conn_opt *opt)
 			if (!strcmp(long_options[option_index].name, "help")) {
 				fprintf(stderr, "Usage: %s\n", conn_info);
 				exit(EXIT_FAILURE);
+			} else if (!strcmp(long_options[option_index].name, "host")) {
+				opt->host = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "port")) {
+				opt->port = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "version")) {
+				opt->version = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "count")) {
+				opt->count = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "startnumber")) {
+				opt->startnumber = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "interval")) {
+				opt->interval = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "username")) {
+				opt->username = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "password")) {
+				opt->password = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "keepalive")) {
+				opt->keepalive = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "clean")) {
+				if (!strcmp(optarg, "true")) {
+					opt->clean = true;
+				} else if (!strcmp(optarg, "true")) {
+					opt->clean = false;
+				} else {
+					fprintf(stderr, "Usage: %s\n", conn_info);
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			break;
@@ -277,18 +311,69 @@ pub_opt_set(int argc, char **argv, nnb_pub_opt *opt)
 	int option_index = 0;
 
 	while (
-	    (c = getopt_long(argc, argv, "l:r:s:t:I:h:p:V:c:n:i:u:P:k:C:L:S:0",
+	    (c = getopt_long(argc, argv, "q:l:r:s:t:I:h:p:V:c:n:i:u:P:k:C:L:S:0",
 	         long_options, &option_index)) != -1) {
 		int this_option_optind = optind ? optind : 1;
 		switch (c) {
 		case 0:
-			// printf ("option %s",
-			// long_options[option_index].name); if (optarg)
-			// printf
-			// (" with value %s", optarg); printf ("\n");
+			printf ("option %s",
+			long_options[option_index].name); if (optarg)
+			printf
+			(" with value %s", optarg); printf ("\n");
 			if (!strcmp(long_options[option_index].name, "help")) {
 				fprintf(stderr, "Usage: %s\n", pub_info);
 				exit(EXIT_FAILURE);
+			} else if (!strcmp(long_options[option_index].name, "topic")) {
+				opt->topic = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "host")) {
+				opt->host = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "port")) {
+				opt->port = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "version")) {
+				opt->version = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "count")) {
+				opt->count = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "startnumber")) {
+				opt->startnumber = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "interval")) {
+				opt->interval = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "username")) {
+				opt->username = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "password")) {
+				opt->password = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "keepalive")) {
+				opt->keepalive = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "clean")) {
+				if (!strcmp(optarg, "true")) {
+					opt->clean = true;
+				} else if (!strcmp(optarg, "true")) {
+					opt->clean = false;
+				} else {
+					fprintf(stderr, "Usage: %s\n", pub_info);
+					exit(EXIT_FAILURE);
+				}
+			} else if (!strcmp(long_options[option_index].name, "qos")) {
+				opt->qos = atoi(optarg);
+				if (opt->qos < 0 || opt->qos > 2) {
+					fprintf(stderr, "Error: qos invalided!\n");
+					fprintf(stderr, "Usage: %s\n", pub_info);
+					exit(EXIT_FAILURE);
+				}
+			} else if (!strcmp(long_options[option_index].name, "limit")) {
+				opt->limit = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "retain")) {
+				if (!strcmp(optarg, "true")) {
+					opt->retain = true;
+				} else if (!strcmp(optarg, "true")) {
+					opt->retain = false;
+				} else {
+					fprintf(stderr, "Usage: %s\n", pub_info);
+					exit(EXIT_FAILURE);
+				}
+			} else if (!strcmp(long_options[option_index].name, "size")) {
+				opt->size = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "interval_of_msg")) {
+				opt->interval_of_msg = atoi(optarg);
 			}
 
 			break;
@@ -300,6 +385,11 @@ pub_opt_set(int argc, char **argv, nnb_pub_opt *opt)
 			break;
 		case 'q':
 			opt->qos = atoi(optarg);
+			if (opt->qos < 0 || opt->qos > 2) {
+				fprintf(stderr, "Error: qos invalided!\n");
+				fprintf(stderr, "Usage: %s\n", pub_info);
+				exit(EXIT_FAILURE);
+			}
 			break;
 		case 's':
 			opt->size = atoi(optarg);
@@ -383,6 +473,15 @@ pub_opt_set(int argc, char **argv, nnb_pub_opt *opt)
 			printf("%s ", argv[optind++]);
 		printf("\n");
 	}
+
+
+	if (opt->topic == NULL) {
+		fprintf(stderr, "Error: topic required\n");
+		fprintf(stderr, "Usage: %s\n", pub_info);
+		exit(EXIT_FAILURE);
+
+
+	}
 }
 
 int
@@ -390,7 +489,7 @@ sub_opt_set(int argc, char **argv, nnb_sub_opt *opt)
 {
 
 	if (argc < 2) {
-		fprintf(stderr, "Usage: %s\n", conn_info);
+		fprintf(stderr, "Usage: %s\n", sub_info);
 		exit(EXIT_FAILURE);
 	}
 
@@ -403,15 +502,50 @@ sub_opt_set(int argc, char **argv, nnb_sub_opt *opt)
 		int this_option_optind = optind ? optind : 1;
 		switch (c) {
 		case 0:
-			// printf ("option %s",
-			// long_options[option_index].name); if (optarg)
-			// printf
-			// (" with value %s", optarg); printf ("\n");
+			printf ("option %s",
+			long_options[option_index].name); if (optarg)
+			printf
+			(" with value %s", optarg); printf ("\n");
 			if (!strcmp(long_options[option_index].name, "help")) {
-				fprintf(stderr, "Usage: %s\n", conn_info);
+				fprintf(stderr, "Usage: %s\n", sub_info);
 				exit(EXIT_FAILURE);
+			} else if (!strcmp(long_options[option_index].name, "topic")) {
+				opt->topic = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "host")) {
+				opt->host = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "port")) {
+				opt->port = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "version")) {
+				opt->version = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "count")) {
+				opt->count = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "startnumber")) {
+				opt->startnumber = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "interval")) {
+				opt->interval = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "username")) {
+				opt->username = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "password")) {
+				opt->password = nng_strdup(optarg);
+			} else if (!strcmp(long_options[option_index].name, "keepalive")) {
+				opt->keepalive = atoi(optarg);
+			} else if (!strcmp(long_options[option_index].name, "clean")) {
+				if (!strcmp(optarg, "true")) {
+					opt->clean = true;
+				} else if (!strcmp(optarg, "true")) {
+					opt->clean = false;
+				} else {
+					fprintf(stderr, "Usage: %s\n", sub_info);
+					exit(EXIT_FAILURE);
+				}
+			} else if (!strcmp(long_options[option_index].name, "qos")) {
+				opt->qos = atoi(optarg);
+				if (opt->qos < 0 || opt->qos > 2) {
+					fprintf(stderr, "Error: qos invalided!\n");
+					fprintf(stderr, "Usage: %s\n", sub_info);
+					exit(EXIT_FAILURE);
+				}
 			}
-
 			break;
 
 		case 't':
@@ -419,6 +553,12 @@ sub_opt_set(int argc, char **argv, nnb_sub_opt *opt)
 			break;
 		case 'q':
 			opt->qos = atoi(optarg);
+			if (opt->qos < 0 || opt->qos > 2) {
+				fprintf(stderr, "Error: qos invalided!\n");
+				fprintf(stderr, "Usage: %s\n", sub_info);
+				exit(EXIT_FAILURE);
+			}
+
 			break;
 		case 'h':
 			opt->host = nng_strdup(optarg);

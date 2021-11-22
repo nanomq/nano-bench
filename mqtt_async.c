@@ -1,4 +1,5 @@
 #include "nnb_opt.h"
+#include "dbg.h"
 #include <limits.h>
 #include <nng/nng.h>
 #include <nng/supplemental/util/platform.h>
@@ -112,7 +113,7 @@ pub_cb(void *arg)
 		memset(payload, 'A', pub_opt->size);
 		nng_mqtt_msg_set_publish_payload(
 		    work->msg, (uint8_t *) payload, pub_opt->size);
-		nng_mqtt_msg_encode(work->msg);
+		// nng_mqtt_msg_encode(work->msg);
 
 		nng_msg_dup(&msg, work->msg);
 		nng_aio_set_msg(work->aio, msg);
@@ -329,18 +330,18 @@ nnb_publish(nnb_pub_opt *opt)
 	nng_msg *msg;
 	nng_mqtt_msg_alloc(&msg, 0);
 	nng_mqtt_msg_set_packet_type(msg, NNG_MQTT_CONNECT);
-	// nng_mqtt_msg_set_connect_keep_alive(msg, opt->keepalive);
-	// nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
-	// if (opt->username) {
-	// 	nng_mqtt_msg_set_connect_user_name(msg, opt->username);
-	// }
-	// if (opt->password) {
-	// 	nng_mqtt_msg_set_connect_password(msg, opt->password);
-	// }
+	nng_mqtt_msg_set_connect_keep_alive(msg, opt->keepalive);
+	nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
+	if (opt->username) {
+		nng_mqtt_msg_set_connect_user_name(msg, opt->username);
+	}
+	if (opt->password) {
+		nng_mqtt_msg_set_connect_password(msg, opt->password);
+	}
 
-	// if ((rv = nng_mqtt_msg_encode(msg)) != 0) {
-	// 	fprintf(stderr, "nng_mqtt_msg_encode failed: %d\n", rv);
-	// }
+	if ((rv = nng_mqtt_msg_encode(msg)) != 0) {
+		fprintf(stderr, "nng_mqtt_msg_encode failed: %d\n", rv);
+	}
 
 	nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG, msg);
 	nng_dialer_set_cb(dialer, connect_cb, (void *) opt);
@@ -362,16 +363,13 @@ main(int argc, char **argv)
 		nnb_pub_opt *opt = nnb_pub_opt_init(argc - 1, ++argv);
 		if (0 == opt->limit) {
 			send_limit = INT_MAX;
-			// printf("send_limit = ulimited\n");
 		} else {
 			send_limit = opt->limit;
-			// printf("send_limit = %d\n", send_limit);
 		}
 		for (int i = 0; i < opt->count; i++) {
 			nnb_publish(opt);
 			nng_msleep(opt->interval);
 		}
-		// nnb_pub_opt_destory(opt);
 	} else if (!strcmp(argv[1], "sub")) {
 		nnb_sub_opt *opt = nnb_sub_opt_init(argc - 1, ++argv);
 		for (int i = 0; i < opt->count; i++) {
@@ -392,7 +390,7 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	for (;;) {
+	for (int i = 0; i < 10; i++) {
 		nng_msleep(1000); // neither pause() nor sleep() portable
 		switch (opt_flag) {
 		case SUB:;
@@ -414,6 +412,11 @@ main(int argc, char **argv)
 			}
 			break;
 		}
+	}
+
+
+	if (opt_flag == PUB) {
+		nnb_pub_opt_destory(pub_opt);
 	}
 
 	return 0;
