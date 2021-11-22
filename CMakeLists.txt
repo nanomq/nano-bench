@@ -21,6 +21,8 @@ find_package(nng CONFIG REQUIRED)
 
 find_package(Threads)
 
+#SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address") 
+#SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
 add_executable(nano_bench mqtt_async.c nnb_opt.c)
 # target_link_libraries(nano_bench ${NNG_LIBRIES})
 target_link_libraries(nano_bench nng)
