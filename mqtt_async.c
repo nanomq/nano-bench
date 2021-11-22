@@ -123,9 +123,16 @@ pub_cb(void *arg)
 
 	case WAIT:
 		work->state = SEND;
-		// nng_sleep_aio(pub_opt->interval_of_msg, work->aio);
-		nng_msleep(pub_opt->interval_of_msg);
-		// break;
+		// NOTE: nng_sleep_aio will incur a delay of 1 millisecond
+		if (pub_opt->interval_of_msg >= 1) {
+			// compensate for 1 millisecond
+			nng_sleep_aio(pub_opt->interval_of_msg - 1, work->aio);
+			break;
+		}
+
+		// do not call sleep for a zero interval_of_msg
+
+		// fall through
 
 	case SEND:
 		// send packets
