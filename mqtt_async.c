@@ -12,7 +12,7 @@ static atomic_int acnt          = 0;
 static atomic_int recv_cnt      = 0;
 static atomic_int last_recv_cnt = 0;
 static atomic_int send_cnt      = 0;
-static atomic_int send_cnt_bak  = 0;
+static atomic_int send_limit    = 0;
 static atomic_int last_send_cnt = 0;
 
 typedef enum { INIT, RECV, WAIT, SEND } nnb_state_flag_t;
@@ -99,7 +99,7 @@ pub_cb(void *arg)
 	switch (work->state) {
 	case INIT:
 
-		if (--send_cnt < 0) {
+		if (++send_cnt > send_limit) {
 			break;
 		}
 		nng_mqtt_msg_alloc(&work->msg, 0);
@@ -134,7 +134,7 @@ pub_cb(void *arg)
 			fatal("nng_send_aio", rv);
 		}
 
-		if (--send_cnt < 0) {
+		if (++send_cnt > send_limit) {
 			break;
 		}
 		nng_msg_dup(&msg, work->msg);
@@ -354,11 +354,11 @@ main(int argc, char **argv)
 	if (!strcmp(argv[1], "pub")) {
 		nnb_pub_opt *opt = nnb_pub_opt_init(argc - 1, ++argv);
 		if (0 == opt->limit) {
-			send_cnt = INT_MAX;
-			printf("send_cnt = ulimited\n");
+			send_limit = INT_MAX;
+			// printf("send_limit = ulimited\n");
 		} else {
-			send_cnt = opt->limit;
-			printf("send_cnt = %d\n", send_cnt);
+			send_limit = opt->limit;
+			// printf("send_limit = %d\n", send_limit);
 		}
 		for (int i = 0; i < opt->count; i++) {
 			nnb_publish(opt);
@@ -403,7 +403,7 @@ main(int argc, char **argv)
 			last_send_cnt = c;
 			if (c != l) {
 				printf("sent: total=%d, rate=%d(msg/sec)\n",
-				    pub_opt->count - c, l - c);
+				    c - pub_opt->count, c - l);
 			}
 			break;
 		}
