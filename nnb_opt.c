@@ -316,10 +316,10 @@ pub_opt_set(int argc, char **argv, nnb_pub_opt *opt)
 		int this_option_optind = optind ? optind : 1;
 		switch (c) {
 		case 0:
-			printf ("option %s",
-			long_options[option_index].name); if (optarg)
-			printf
-			(" with value %s", optarg); printf ("\n");
+			// printf ("option %s",
+			// long_options[option_index].name); if (optarg)
+			// printf
+			// (" with value %s", optarg); printf ("\n");
 			if (!strcmp(long_options[option_index].name, "help")) {
 				fprintf(stderr, "Usage: %s\n", pub_info);
 				exit(EXIT_FAILURE);
@@ -502,10 +502,10 @@ sub_opt_set(int argc, char **argv, nnb_sub_opt *opt)
 		int this_option_optind = optind ? optind : 1;
 		switch (c) {
 		case 0:
-			printf ("option %s",
-			long_options[option_index].name); if (optarg)
-			printf
-			(" with value %s", optarg); printf ("\n");
+			// printf ("option %s",
+			// long_options[option_index].name); if (optarg)
+			// printf
+			// (" with value %s", optarg); printf ("\n");
 			if (!strcmp(long_options[option_index].name, "help")) {
 				fprintf(stderr, "Usage: %s\n", sub_info);
 				exit(EXIT_FAILURE);

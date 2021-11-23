@@ -53,13 +53,11 @@ nnb_opt_get_topic(char *opt_topic, char *opt_username, nng_msg *msg)
 		int         len = topic - opt_topic + 1;
 		const char *client_id =
 		    nng_mqtt_msg_get_connect_client_id(msg);
-		log_info("aaaaa: %s", client_id);
 		size_t size = len + strlen(client_id) + 1;
 		topic       = (char *) nng_alloc(sizeof(char) * size);
 		char *t     = (char *) nng_alloc(sizeof(char) * len);
 		snprintf(t, len, "%s", opt_topic);
 		snprintf(topic, size, "%s%s", t, client_id);
-		log_info("topic: %s", topic);
 		nng_free(t, len);
 	} else if ((topic = strstr(opt_topic, "\%u")) != NULL) {
 		int    len      = topic - opt_topic + 1;
@@ -69,7 +67,6 @@ nnb_opt_get_topic(char *opt_topic, char *opt_username, nng_msg *msg)
 		char *t         = (char *) nng_alloc(sizeof(char) * len);
 		snprintf(t, len, "%s", opt_topic);
 		snprintf(topic, size, "%s%s", t, username);
-		log_info("topic: %s", topic);
 		nng_free(t, len);
 	} else if ((topic = strstr(opt_topic, "\%i")) != NULL) {
 		int    len  = topic - opt_topic + 1;
@@ -78,7 +75,6 @@ nnb_opt_get_topic(char *opt_topic, char *opt_username, nng_msg *msg)
 		char *t     = (char *) nng_alloc(sizeof(char) * len);
 		snprintf(t, len, "%s", opt_topic);
 		snprintf(topic, size, "%s%d", t, topic_cnt++);
-		log_info("topic: %s", topic);
 		nng_free(t, len);
 	} else {
 		return opt_topic;
@@ -101,7 +97,7 @@ sub_cb(void *arg)
 			nng_mqtt_msg_set_packet_type(msg, NNG_MQTT_SUBSCRIBE);
 			char *topic = nnb_opt_get_topic(
 			    sub_opt->topic, sub_opt->username, work->msg);
-			log_info("topic: %s", topic);
+			// log_info("topic: %s", topic);
 			nng_mqtt_topic_qos topic_qos[] = {
 				{ .qos     = sub_opt->qos,
 				    .topic = { .buf = (uint8_t *) topic,
@@ -154,12 +150,11 @@ pub_cb(void *arg)
 		if (++send_cnt > send_limit) {
 			break;
 		}
-		nng_mqtt_msg_alloc(&work->msg, 0);
+		// nng_mqtt_msg_alloc(&work->msg, 0);
 		nng_mqtt_msg_set_packet_type(work->msg, NNG_MQTT_PUBLISH);
 		if (work->msg == NULL) { }
 		char *topic = nnb_opt_get_topic(
 		    pub_opt->topic, pub_opt->username, work->msg);
-		log_info("topic: %s", topic);
 		nng_mqtt_msg_set_publish_topic(work->msg, topic);
 		nng_mqtt_msg_set_publish_qos(work->msg, pub_opt->qos);
 		nng_mqtt_msg_set_publish_retain(work->msg, pub_opt->retain);
@@ -391,7 +386,6 @@ nnb_publish(nnb_pub_opt *opt)
 
 	opt_flag = PUB;
 	pub_opt  = opt;
-	// send_cnt = opt->count;
 
 	// Mqtt connect message
 	nng_msg *msg;
@@ -411,8 +405,6 @@ nnb_publish(nnb_pub_opt *opt)
 	}
 
 	nng_msg_dup(&w->msg, msg);
-	char *client_id = nng_mqtt_msg_get_connect_client_id(msg);
-	printf("client id: %.*s\n", clen, client_id);
 	nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG, msg);
 	nng_dialer_set_cb(dialer, connect_cb, (void *) opt);
 	nng_dialer_start(dialer, NNG_FLAG_NONBLOCK);
