@@ -1,5 +1,5 @@
-#include "nnb_opt.h"
 #include "dbg.h"
+#include "nnb_opt.h"
 #include <limits.h>
 #include <nng/nng.h>
 #include <nng/supplemental/util/platform.h>
@@ -10,11 +10,13 @@
 #endif
 
 static atomic_int acnt          = 0;
+static atomic_int topic_cnt     = 0;
 static atomic_int recv_cnt      = 0;
 static atomic_int last_recv_cnt = 0;
 static atomic_int send_cnt      = 0;
 static atomic_int send_limit    = 0;
 static atomic_int last_send_cnt = 0;
+static atomic_int index_cnt     = 0;
 
 typedef enum { INIT, RECV, WAIT, SEND } nnb_state_flag_t;
 
@@ -42,6 +44,47 @@ fatal(const char *msg, int rv)
 	exit(1);
 }
 
+char *
+nnb_opt_get_topic(char *opt_topic, char *opt_username, nng_msg *msg)
+{
+	char *topic = NULL;
+	if ((topic = strstr(opt_topic, "\%c")) != NULL) {
+		int         len = topic - opt_topic + 1;
+		const char *client_id =
+		    nng_mqtt_msg_get_connect_client_id(msg);
+		log_info("aaaaa: %s", client_id);
+		size_t size = len + strlen(client_id) + 1;
+		topic       = (char *) nng_alloc(sizeof(char) * size);
+		char *t     = (char *) nng_alloc(sizeof(char) * len);
+		snprintf(t, len, "%s", opt_topic);
+		snprintf(topic, size, "%s%s", t, client_id);
+		log_info("topic: %s", topic);
+		nng_free(t, len);
+	} else if ((topic = strstr(opt_topic, "\%u")) != NULL) {
+		int    len      = topic - opt_topic + 1;
+		char * username = opt_username ? opt_username : "undefined";
+		size_t size     = len + strlen(username) + 1;
+		topic           = (char *) nng_alloc(sizeof(char) * size);
+		char *t         = (char *) nng_alloc(sizeof(char) * len);
+		snprintf(t, len, "%s", opt_topic);
+		snprintf(topic, size, "%s%s", t, username);
+		log_info("topic: %s", topic);
+		nng_free(t, len);
+	} else if ((topic = strstr(opt_topic, "\%i")) != NULL) {
+		int    len  = topic - opt_topic + 1;
+		size_t size = len + 5;
+		topic       = (char *) nng_alloc(sizeof(char) * size);
+		char *t     = (char *) nng_alloc(sizeof(char) * len);
+		snprintf(t, len, "%s", opt_topic);
+		snprintf(topic, size, "%s%d", t, topic_cnt++);
+		log_info("topic: %s", topic);
+		nng_free(t, len);
+	} else {
+		return opt_topic;
+	}
+	return topic;
+}
+
 void
 sub_cb(void *arg)
 {
@@ -52,19 +95,26 @@ sub_cb(void *arg)
 	switch (work->state) {
 	case INIT:
 		// subscribe to topics
-		nng_mqtt_msg_alloc(&msg, 0);
-		nng_mqtt_msg_set_packet_type(msg, NNG_MQTT_SUBSCRIBE);
-		nng_mqtt_topic_qos topic[] = {
-			{ .qos     = sub_opt->qos,
-			    .topic = { .buf = (uint8_t *) sub_opt->topic,
-			        .length     = strlen(sub_opt->topic) } },
-		};
+		if (index_cnt == 0) {
+			nng_mqtt_msg_alloc(&msg, 0);
+			nng_mqtt_msg_set_packet_type(msg, NNG_MQTT_SUBSCRIBE);
+			char *topic = nnb_opt_get_topic(
+			    sub_opt->topic, sub_opt->username, work->msg);
+			log_info("topic: %s", topic);
+			nng_mqtt_topic_qos topic_qos[] = {
+				{ .qos     = sub_opt->qos,
+				    .topic = { .buf = (uint8_t *) topic,
+				        .length     = strlen(topic) } },
+			};
 
-		nng_mqtt_msg_set_subscribe_topics(msg, topic, 1);
-		nng_mqtt_msg_encode(msg);
-		nng_aio_set_msg(work->aio, msg);
-		work->state = SEND;
-		nng_ctx_send(work->ctx, work->aio);
+			nng_mqtt_msg_set_subscribe_topics(msg, topic_qos, 1);
+			nng_aio_set_msg(work->aio, msg);
+			work->state = SEND;
+			nng_ctx_send(work->ctx, work->aio);
+		} else {
+			work->state = RECV;
+			nng_ctx_recv(work->ctx, work->aio);
+		}
 		break;
 
 	case SEND:
@@ -105,7 +155,11 @@ pub_cb(void *arg)
 		}
 		nng_mqtt_msg_alloc(&work->msg, 0);
 		nng_mqtt_msg_set_packet_type(work->msg, NNG_MQTT_PUBLISH);
-		nng_mqtt_msg_set_publish_topic(work->msg, pub_opt->topic);
+		if (work->msg == NULL) { }
+		char *topic = nnb_opt_get_topic(
+		    pub_opt->topic, pub_opt->username, work->msg);
+		log_info("topic: %s", topic);
+		nng_mqtt_msg_set_publish_topic(work->msg, topic);
 		nng_mqtt_msg_set_publish_qos(work->msg, pub_opt->qos);
 		nng_mqtt_msg_set_publish_retain(work->msg, pub_opt->retain);
 		char *payload =
@@ -113,7 +167,7 @@ pub_cb(void *arg)
 		memset(payload, 'A', pub_opt->size);
 		nng_mqtt_msg_set_publish_payload(
 		    work->msg, (uint8_t *) payload, pub_opt->size);
-		// nng_mqtt_msg_encode(work->msg);
+		nng_mqtt_msg_encode(work->msg);
 
 		nng_msg_dup(&msg, work->msg);
 		nng_aio_set_msg(work->aio, msg);
@@ -290,9 +344,11 @@ nnb_subscribe(nnb_sub_opt *opt)
 	nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG, msg);
 	nng_dialer_set_cb(dialer, connect_cb, (void *) opt);
 	nng_dialer_start(dialer, NNG_FLAG_NONBLOCK);
+	works[0]->msg = msg;
 
 	// printf("dialer start after\n");
 	for (i = 0; i < PARALLEL; i++) {
+		index_cnt = i;
 		sub_cb(works[i]);
 	}
 }
@@ -307,7 +363,7 @@ nnb_publish(nnb_pub_opt *opt)
 	char         url[128];
 	nng_socket   sock;
 	nng_dialer   dialer;
-	struct work *work;
+	struct work *w;
 	int          i;
 	int          rv;
 
@@ -316,7 +372,7 @@ nnb_publish(nnb_pub_opt *opt)
 		fatal("nng_socket", rv);
 	}
 
-	work = alloc_work(sock, pub_cb);
+	w = alloc_work(sock, pub_cb);
 
 	if ((rv = nng_dialer_create(&dialer, sock, url)) != 0) {
 		fatal("nng_dialer_create", rv);
@@ -343,11 +399,14 @@ nnb_publish(nnb_pub_opt *opt)
 		fprintf(stderr, "nng_mqtt_msg_encode failed: %d\n", rv);
 	}
 
+	nng_msg_dup(&w->msg, msg);
+	char *client_id = nng_mqtt_msg_get_connect_client_id(msg);
+	printf("client id: %.*s\n", clen, client_id);
 	nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG, msg);
 	nng_dialer_set_cb(dialer, connect_cb, (void *) opt);
 	nng_dialer_start(dialer, NNG_FLAG_NONBLOCK);
 
-	pub_cb(work);
+	pub_cb(w);
 }
 
 int
@@ -390,7 +449,7 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	for (int i = 0; i < 10; i++) {
+	for (;;) {
 		nng_msleep(1000); // neither pause() nor sleep() portable
 		switch (opt_flag) {
 		case SUB:;
@@ -413,7 +472,6 @@ main(int argc, char **argv)
 			break;
 		}
 	}
-
 
 	if (opt_flag == PUB) {
 		nnb_pub_opt_destory(pub_opt);
