@@ -29,6 +29,7 @@ typedef enum {
 struct work {
 	nng_aio *        aio;
 	nng_msg *        msg;
+	nng_time         last_send_ts; // last logical time stamp we send
 	nng_ctx          ctx;
 	nnb_state_flag_t state;
 };
@@ -171,18 +172,28 @@ pub_cb(void *arg)
 
 		nng_msg_dup(&msg, work->msg);
 		nng_aio_set_msg(work->aio, msg);
-		msg         = NULL;
-		work->state = WAIT;
+		msg                = NULL;
+		work->state        = WAIT;
+		work->last_send_ts = nng_clock();
 		nng_ctx_send(work->ctx, work->aio);
 		break;
 
 	case WAIT:
 		work->state = SEND;
-		// NOTE: nng_sleep_aio will incur a delay of 1 millisecond
+		// NOTE: nng_sleep_aio will sleep for more than you wanted
 		if (pub_opt->interval_of_msg >= 1) {
-			// compensate for 1 millisecond
-			nng_sleep_aio(pub_opt->interval_of_msg - 1, work->aio);
-			break;
+			nng_time now      = nng_clock();
+			int      interval = pub_opt->interval_of_msg;
+			long     d = now - work->last_send_ts - interval;
+			// increment the logic clock
+			work->last_send_ts += interval;
+			if (d < interval) {
+				// not too much delay, just sleep
+				nng_sleep_aio(interval, work->aio);
+				break;
+			}
+
+			// we have slept too much, just to SEND
 		}
 
 		// do not call sleep for a zero interval_of_msg
