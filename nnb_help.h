@@ -2,7 +2,7 @@
 #define NNB_HELP_H
 
 static char pub_info[] =
-    "Usage: emqtt_bench pub [--help <help>] [-h [<host>]] [-p [<port>]]\n\
+    "nano_bench pub [--help <help>] [-h [<host>]] [-p [<port>]]\n\
                        [-V [<version>]] [-c [<count>]]             \n\
                        [-n [<startnumber>]] [-i [<interval>]]      \n\
                        [-I [<interval_of_msg>]] [-u <username>]    \n\
@@ -49,7 +49,7 @@ static char pub_info[] =
 ";
 
 static char sub_info[] =
-    "Usage: emqtt_bench sub [--help <help>] [-h [<host>]] [-p [<port>]] \n\
+    "nano_bench sub [--help <help>] [-h [<host>]] [-p [<port>]] \n\
                        [-V [<version>]] [-c [<count>]]              \n\
                        [-n [<startnumber>]] [-i [<interval>]]       \n\
                        [-t <topic>] [-q [<qos>]] [-u <username>]    \n\
@@ -86,7 +86,7 @@ static char sub_info[] =
 ";
 
 static char conn_info[] =
-    "Usage: emqtt_bench conn [--help <help>] [-h [<host>]] [-p [<port>]]\n\
+    "nano_bench conn [--help <help>] [-h [<host>]] [-p [<port>]]\n\
                         [-V [<version>]] [-c [<count>]]             \n\
                         [-n [<startnumber>]] [-i [<interval>]]      \n\
                         [-u <username>] [-P <password>]             \n\
