@@ -8,23 +8,13 @@ cmake_minimum_required (VERSION 2.8.7)
 
 project(nano_bench)
 
-# find_package(nng CONFIG REQUIRED)
+SET(CMAKE_C_FLAGS  "-g")
 
-include_directories(/home/lee/workspace/nng/include)
-SET(CMAKE_CXX_FLAGS  "-g")
-set(CMAKE_PREFIX_PATH "/home/lee/workspace/nng/build/")
-find_library(NNG_LIBRIES NAMES nng PATHS /home/lee/workspace/nng/build/)
-if (NNG_LIBRIES)  
-	message(STATUS "${NNG_LIBRIES} library found")
-else (NNG_LIBRIES)
-	message(FATAL_ERROR "nng library not found")
-endif(NNG_LIBRIES)
+add_subdirectory(nng)
 
-find_package(Threads)
-
-#SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address") 
-#SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
 add_executable(nano_bench mqtt_async.c nnb_opt.c)
-target_link_libraries(nano_bench ${NNG_LIBRIES})
-# target_link_libraries(nano_bench nng)
-target_link_libraries(nano_bench ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(nano_bench nng)
+add_dependencies(nano_bench nng)
+
+
+# TODO nano_bench install
