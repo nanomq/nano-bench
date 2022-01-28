@@ -235,17 +235,30 @@ alloc_work(nng_socket sock, void cb(void *))
 
 // Connack message callback function
 static void
-connect_cb(void *arg, nng_msg *msg)
+connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
 	switch (opt_flag) {
-	case SUB:
-		if (nng_mqtt_msg_get_connack_return_code(msg) == 0) {
-			nnb_sub_opt *opt = (nnb_sub_opt *) arg;
-			if (arg != NULL) {
-				printf("connected: %d. Topics: [\"%s\"]\n",
-				    ++acnt, opt->topic);
-			}
-		}
+	case SUB:;
+		// nnb_sub_opt *opt = (nnb_sub_opt *) arg;
+		// if (arg != NULL) {
+			printf("connected: %d. Topics: [\"%s\"]\n",
+			    ++acnt, sub_opt->topic);
+		// }
+
+
+		// // Connected succeed
+		// nng_msg *msg;
+		// nng_mqtt_msg_alloc(&msg, 0);
+		// nng_mqtt_msg_set_packet_type(msg, NNG_MQTT_SUBSCRIBE);
+		// nng_mqtt_msg_set_subscribe_topics(msg, topic_qos, topic_qos_count);
+
+		// // Send subscribe message
+		// nng_sendmsg(sock, msg, NNG_FLAG_NONBLOCK);
+
+
+
+
+		// printf("connected: %d.\n", ++acnt);
 		break;
 	case PUB:
 		printf("connected: %d.\n", ++acnt);
@@ -255,7 +268,6 @@ connect_cb(void *arg, nng_msg *msg)
 		break;
 	}
 
-	nng_msg_free(msg);
 }
 
 int
@@ -287,6 +299,8 @@ nnb_connect(nnb_conn_opt *opt)
 	nng_mqtt_msg_set_connect_keep_alive(msg, opt->keepalive);
 	nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
 
+	nng_mqtt_set_connect_cb(sock, connect_cb, &sock);
+
 	if (opt->username) {
 		nng_mqtt_msg_set_connect_user_name(msg, opt->username);
 	}
@@ -295,7 +309,6 @@ nnb_connect(nnb_conn_opt *opt)
 	}
 
 	nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG, msg);
-	nng_dialer_set_cb(dialer, connect_cb, NULL);
 	nng_dialer_start(dialer, NNG_FLAG_NONBLOCK);
 }
 
@@ -335,6 +348,10 @@ nnb_subscribe(nnb_sub_opt *opt)
 	nng_mqtt_msg_set_packet_type(msg, NNG_MQTT_CONNECT);
 	nng_mqtt_msg_set_connect_keep_alive(msg, opt->keepalive);
 	nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
+
+
+	nng_mqtt_set_connect_cb(sock, connect_cb, &sock);
+
 	if (opt->username) {
 		nng_mqtt_msg_set_connect_user_name(msg, opt->username);
 	}
@@ -348,7 +365,6 @@ nnb_subscribe(nnb_sub_opt *opt)
 	}
 
 	nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG, msg);
-	nng_dialer_set_cb(dialer, connect_cb, (void *) opt);
 	nng_dialer_start(dialer, NNG_FLAG_NONBLOCK);
 	works[0]->msg = msg;
 
@@ -393,6 +409,11 @@ nnb_publish(nnb_pub_opt *opt)
 	nng_mqtt_msg_set_packet_type(msg, NNG_MQTT_CONNECT);
 	nng_mqtt_msg_set_connect_keep_alive(msg, opt->keepalive);
 	nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
+
+	nng_mqtt_set_connect_cb(sock, connect_cb, &sock);
+	// nng_mqtt_set_disconnect_cb(sock, disconnect_cb, NULL);
+
+
 	if (opt->username) {
 		nng_mqtt_msg_set_connect_user_name(msg, opt->username);
 	}
@@ -406,7 +427,6 @@ nnb_publish(nnb_pub_opt *opt)
 
 	nng_msg_dup(&w->msg, msg);
 	nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG, msg);
-	nng_dialer_set_cb(dialer, connect_cb, (void *) opt);
 	nng_dialer_start(dialer, NNG_FLAG_NONBLOCK);
 
 	pub_cb(w);
