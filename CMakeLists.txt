@@ -10,6 +10,8 @@ project(nano_bench)
 
 SET(CMAKE_C_FLAGS  "-g")
 
+set(NNG_PROTO_MQTT_CLIENT ON)
+
 add_subdirectory(nng)
 
 add_executable(nano_bench mqtt_async.c nnb_opt.c)
