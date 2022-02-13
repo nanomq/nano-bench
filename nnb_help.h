@@ -39,10 +39,14 @@ static char pub_info[] =
                          unlimited [default: 0]                    \n\
   -S, --ssl              ssl socoket for connecting to server      \n\
                          [default: false]                          \n\
+  --cafile               ca certificate for authentication, if     \n\
+                         required by server                        \n\
   --certfile             client certificate for authentication, if \n\
                          required by server                        \n\
   --keyfile              client private key for authentication, if \n\
                          required by server                        \n\
+  --keypass              client private key's password for         \n\
+                         authentication                            \n\
   --ws                   websocket transport [default: false]      \n\
   --ifaddr               local ipaddress or interface address      \n\
   --prefix               client id prefix                          \n\
@@ -74,12 +78,16 @@ static char sub_info[] =
   -P, --password     password for connecting to server              \n\
   -k, --keepalive    keep alive in seconds [default: 300]           \n\
   -C, --clean        clean start [default: true]                    \n\
-  -S, --ssl          ssl socoket for connecting to server [default: \n\
-                     false]                                         \n\
+  -S, --ssl          ssl socoket for connecting to server           \n\
+                     [default: false]                               \n\
+  --cafile           ca certificate for authentication, if          \n\
+                     required by server                             \n\
   --certfile         client certificate for authentication, if      \n\
                      required by server                             \n\
   --keyfile          client private key for authentication, if      \n\
                      required by server                             \n\
+  --keypass          client private key's password for              \n\
+                     authentication                                 \n\
   --ws               websocket transport [default: false]           \n\
   --ifaddr           local ipaddress or interface address           \n\
   --prefix           client id prefix			            \n\
@@ -108,12 +116,16 @@ static char conn_info[] =
   -P, --password     password for connecting to server              \n\
   -k, --keepalive    keep alive in seconds [default: 300]           \n\
   -C, --clean        clean session [default: true]                  \n\
-  -S, --ssl          ssl socoket for connecting to server [default: \n\
-                     false]                                         \n\
+  -S, --ssl          ssl socoket for connecting to server           \n\
+                     [default: false]                               \n\
+  --cafile           ca certificate for authentication, if          \n\
+                     required by server                             \n\
   --certfile         client certificate for authentication, if      \n\
                      required by server                             \n\
   --keyfile          client private key for authentication, if      \n\
                      required by server                             \n\
+  --keypass          client private key's password for              \n\
+                     authentication                                 \n\
   --ifaddr           local ipaddress or interface address           \n\
   --prefix           client id prefix			            \n\
 ";
