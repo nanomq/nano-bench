@@ -13,73 +13,77 @@
 #include <nng/supplemental/util/platform.h>
 
 typedef struct {
-	char *host;
-	char *username;
-	char *password;
-	int   port;
-	int   version;
-	int   count;
-	int   startnumber;
-	int   interval;
-	int   keepalive;
-	bool  clean;
+	bool  enable;
+	char *cacert;
+	char *cert;
+	char *key;
+	char *keypass;
+} tls_opt;
+
+typedef struct {
+	char *  host;
+	char *  username;
+	char *  password;
+	int     port;
+	int     version;
+	int     count;
+	int     startnumber;
+	int     interval;
+	int     keepalive;
+	bool    clean;
+	tls_opt tls;
 	// TODO future
-	// bool	ssl;
-	// char	certfile[64];
-	// char	keyfile[64];
 	// char	ifaddr[64];
 	// char	prefix[64];
 } nnb_conn_opt;
 
 typedef struct {
-	char *host;
-	char *username;
-	char *password;
-	char *topic;
-	int   port;
-	int   version;
-	int   count;
-	int   startnumber;
-	int   interval;
-	int   keepalive;
-	int   qos;
-	bool  clean;
+	char *  host;
+	char *  username;
+	char *  password;
+	char *  topic;
+	int     port;
+	int     version;
+	int     count;
+	int     startnumber;
+	int     interval;
+	int     keepalive;
+	int     qos;
+	bool    clean;
+	tls_opt tls;
 	// TODO future
 	// bool	ws;
-	// bool	ssl;
-	// char	certfile[64];
-	// char	keyfile[64];
 	// char	ifaddr[64];
 	// char	prefix[64];
 } nnb_sub_opt;
 
 typedef struct {
-	char *host;
-	char *username;
-	char *password;
-	char *topic;
-	int   port;
-	int   version;
-	int   count;
-	int   startnumber;
-	int   interval;
-	int   interval_of_msg;
-	int   size;
-	int   limit;
-	int   keepalive;
-	int   qos;
-	bool  retain;
-	bool  clean;
+	char *  host;
+	char *  username;
+	char *  password;
+	char *  topic;
+	int     port;
+	int     version;
+	int     count;
+	int     startnumber;
+	int     interval;
+	int     interval_of_msg;
+	int     size;
+	int     limit;
+	int     keepalive;
+	int     qos;
+	bool    retain;
+	bool    clean;
+	tls_opt tls;
 	// TODO future
 	// bool	ws;
-	// bool	ssl;
-	// char	certfile[64];
-	// char	keyfile[64];
 	// char	ifaddr[64];
 	// char	prefix[64];
 } nnb_pub_opt;
 
-static struct option long_options[] = { { "host", required_argument, NULL, 0 },
+static struct option long_options[] = {
+
+	{ "host", required_argument, NULL, 0 },
 	{ "port", required_argument, NULL, 0 },
 	{ "topic", required_argument, NULL, 0 },
 	{ "version", required_argument, NULL, 0 },
@@ -95,13 +99,16 @@ static struct option long_options[] = { { "host", required_argument, NULL, 0 },
 	{ "size", required_argument, NULL, 0 },
 	{ "retain", required_argument, NULL, 0 },
 	{ "interval_of_msg", required_argument, NULL, 0 },
+	{ "ssl", no_argument, NULL, 0 },
+	{ "cafile", required_argument, NULL, 0 },
+	{ "certfile", required_argument, NULL, 0 },
+	{ "keyfile", required_argument, NULL, 0 },
+	{ "keypass", required_argument, NULL, 0 },
 
-	//  { "ssl", 		required_argument, NULL, 0 },
-	//  { "certfile", 	required_argument, NULL, 0 },
-	//  { "ketfile", 	required_argument, NULL, 0 },
 	//  { "ifaddr", 	required_argument, NULL, 0 },
 	//  { "prefix", 	required_argument, NULL, 0 },
-	{ "help", no_argument, NULL, 0 }, { NULL, 0, NULL, 0 } };
+	{ "help", no_argument, NULL, 0 }, { NULL, 0, NULL, 0 }
+};
 
 nnb_conn_opt *nnb_conn_opt_init(int argc, char **argv);
 

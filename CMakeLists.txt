@@ -12,6 +12,10 @@ SET(CMAKE_C_FLAGS  "-g")
 
 set(NNG_PROTO_MQTT_CLIENT ON)
 
+if(NNG_ENABLE_TLS)
+    add_definitions(-DNNG_SUPP_TLS)
+endif()
+
 add_subdirectory(nng)
 
 add_executable(nano_bench mqtt_async.c nnb_opt.c)
