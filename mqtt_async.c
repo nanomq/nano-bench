@@ -312,6 +312,12 @@ connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 	}
 }
 
+static void
+disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
+{
+	printf("disconnected!\n");
+}
+
 int
 nnb_connect(nnb_conn_opt *opt)
 {
@@ -354,6 +360,7 @@ nnb_connect(nnb_conn_opt *opt)
 	nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
 
 	nng_mqtt_set_connect_cb(sock, connect_cb, &sock);
+	nng_mqtt_set_disconnect_cb(sock, disconnect_cb, NULL);
 
 	if (opt->username) {
 		nng_mqtt_msg_set_connect_user_name(msg, opt->username);
@@ -416,6 +423,7 @@ nnb_subscribe(nnb_sub_opt *opt)
 	nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
 
 	nng_mqtt_set_connect_cb(sock, connect_cb, &sock);
+	nng_mqtt_set_disconnect_cb(sock, disconnect_cb, NULL);
 
 	if (opt->username) {
 		nng_mqtt_msg_set_connect_user_name(msg, opt->username);
@@ -486,7 +494,7 @@ nnb_publish(nnb_pub_opt *opt)
 	nng_mqtt_msg_set_connect_clean_session(msg, opt->clean);
 
 	nng_mqtt_set_connect_cb(sock, connect_cb, &sock);
-	// nng_mqtt_set_disconnect_cb(sock, disconnect_cb, NULL);
+	nng_mqtt_set_disconnect_cb(sock, disconnect_cb, NULL);
 
 	if (opt->username) {
 		nng_mqtt_msg_set_connect_user_name(msg, opt->username);
